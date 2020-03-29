@@ -6,17 +6,15 @@ Gem::Specification.new do |spec|
   spec.authors       = ["nekootoko3"]
   spec.email         = ["miyako.kerria@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because RubyGems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = "programming language Jack compiler"
+  spec.description   = "Ruby implementation of programming language Jack compiler. https://www.nand2tetris.org/"
+  spec.homepage      = "https://github.com/nekootoko3/jack_compiler"
   spec.license       = "MIT"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
-  spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
-
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
-  spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata["source_code_uri"] = "https://github.com/nekootoko3/jack_compiler"
+  spec.metadata["changelog_uri"] = "https://github.com/nekootoko3/vm_hack_translator/blob/master/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
