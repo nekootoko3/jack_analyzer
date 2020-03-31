@@ -1,4 +1,7 @@
+require "nokogiri"
+
 require "jack_compiler/jack_tokenizer"
+require "jack_compiler/compilation_engine"
 
 module JackCompiler::Cli
   def self.start(args)
@@ -14,20 +17,23 @@ module JackCompiler::Cli
     input_files.each do |input_file|
       puts "processing #{input_file}..."
 
-      output_file = File.open(
-        File.join(File.dirname(input_file), File.basename(input_file, ".*") + ".xml"),
-        "w+"
-      )
       tokenizer = JackCompiler::JackTokenizer.new(input_file)
-
-      output_file.puts("<tokens>")
-      while tokenizer.has_more_tokens?
-        tokenizer.advance!
-        output_file.puts("<#{tokenizer.token_type}> #{tokenizer.token} </#{tokenizer.token_type}>")
+      builder = Nokogiri::XML::Builder.new do |xml|
+        xml.tokens do |t|
+          while tokenizer.has_more_tokens?
+            tokenizer.advance!
+            t.send tokenizer.token_type, tokenizer.token
+          end
+        end
       end
-      output_file.puts("</tokens>")
-
+      JackCompiler::CompilationEngine.new(builder.to_xml, output_file_from(input_file)).compile_class!
       puts "processed #{input_file}"
     end
+  end
+
+  private
+
+  def self.output_file_from(input_file)
+    File.join(File.dirname(input_file), File.basename(input_file, ".*") + ".xml")
   end
 end

@@ -70,7 +70,8 @@ module JackCompiler::TokenType
   end
 
   def tokenize_from(symbol, token_type = nil)
-    SYMBOL_TOKEN_MAPPING[symbol] || symbol
+#    SYMBOL_TOKEN_MAPPING[symbol] || symbol
+    symbol
   end
 
   def str_from(token_type)

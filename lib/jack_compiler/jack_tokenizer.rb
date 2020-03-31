@@ -44,26 +44,6 @@ class JackCompiler::JackTokenizer
     @location += 1
   end
 
-  def keyword
-
-  end
-
-  def symbol
-
-  end
-
-  def identifier
-
-  end
-
-  def inv_val
-
-  end
-
-  def string_val
-
-  end
-
   private
 
   def skip_single_line_comment!
