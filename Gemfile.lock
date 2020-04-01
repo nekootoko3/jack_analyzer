@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jack_compiler (0.1.0)
+    jack_analyzer (0.1.0)
       nokogiri (~> 1.10)
 
 GEM
@@ -30,7 +30,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  jack_compiler!
+  jack_analyzer!
   rake (~> 12.0)
   rspec (~> 3.0)
 

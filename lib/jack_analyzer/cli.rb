@@ -1,9 +1,9 @@
 require "nokogiri"
 
-require "jack_compiler/jack_tokenizer"
-require "jack_compiler/compilation_engine"
+require "jack_analyzer/jack_tokenizer"
+require "jack_analyzer/compilation_engine"
 
-module JackCompiler::Cli
+module JackAnalyzer::Cli
   def self.start(args)
     input_files = case File.ftype(args[0]).to_sym
       when :file
@@ -17,7 +17,7 @@ module JackCompiler::Cli
     input_files.each do |input_file|
       puts "processing #{input_file}..."
 
-      tokenizer = JackCompiler::JackTokenizer.new(input_file)
+      tokenizer = JackAnalyzer::JackTokenizer.new(input_file)
       builder = Nokogiri::XML::Builder.new do |xml|
         xml.tokens do |t|
           while tokenizer.has_more_tokens?
@@ -26,7 +26,7 @@ module JackCompiler::Cli
           end
         end
       end
-      JackCompiler::CompilationEngine.new(builder.to_xml, output_file_from(input_file)).compile_class!
+      JackAnalyzer::CompilationEngine.new(builder.to_xml, output_file_from(input_file)).compile_class!
       puts "processed #{input_file}"
     end
   end

@@ -1,6 +1,6 @@
 require "Set"
 
-module JackCompiler::TokenType
+module JackAnalyzer::TokenType
   UNDEFINED    = 0
   KEYWORD      = 1
   SYMBOL       = 2

@@ -1,7 +1,7 @@
-require "jack_compiler/token_type"
+require "jack_analyzer/token_type"
 
-class JackCompiler::JackTokenizer
-  include JackCompiler::TokenType
+class JackAnalyzer::JackTokenizer
+  include JackAnalyzer::TokenType
 
   def initialize(input_file)
     @input = File.open(input_file).read

@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "jack_compiler"
+require "jack_analyzer"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

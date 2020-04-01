@@ -1,7 +1,7 @@
 require "nokogiri"
 require "set"
 
-class JackCompiler::CompilationEngine
+class JackAnalyzer::CompilationEngine
   OP_SET = Set.new(["+", "-", "*", "/", "&", "|", "<", ">", "="])
   UNARY_OP_SET = Set.new(["-", "~"])
   TYPE_KEYWORD_SET = Set.new(["int", "char", "boolean"])

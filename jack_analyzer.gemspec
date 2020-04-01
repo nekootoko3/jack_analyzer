@@ -1,19 +1,19 @@
-require_relative 'lib/jack_compiler/version'
+require_relative 'lib/jack_analyzer/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "jack_compiler"
-  spec.version       = JackCompiler::VERSION
+  spec.name          = "jack_analyzer"
+  spec.version       = JackAnalyzer::VERSION
   spec.authors       = ["nekootoko3"]
   spec.email         = ["miyako.kerria@gmail.com"]
 
-  spec.summary       = "programming language Jack compiler"
-  spec.description   = "Ruby implementation of programming language Jack compiler. https://www.nand2tetris.org/"
-  spec.homepage      = "https://github.com/nekootoko3/jack_compiler"
+  spec.summary       = "programming language Jack analyzer"
+  spec.description   = "Ruby implementation of programming language Jack analyzer. https://www.nand2tetris.org/"
+  spec.homepage      = "https://github.com/nekootoko3/jack_analyzer"
   spec.license       = "MIT"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/nekootoko3/jack_compiler"
+  spec.metadata["source_code_uri"] = "https://github.com/nekootoko3/jack_analyzer"
   spec.metadata["changelog_uri"] = "https://github.com/nekootoko3/vm_hack_translator/blob/master/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
