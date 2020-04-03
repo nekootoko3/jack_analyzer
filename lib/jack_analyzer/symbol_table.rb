@@ -7,8 +7,10 @@ class JackAnalyzer::SymbolTable
   def initialize
     @class_scope = {}
     @subroutine_scope = {}
-    @class_exec_index = 0
-    @subroutine_exec_index = 0
+    @static_index = 0
+    @field_index = 0
+    @subroutine_index = 0
+    @local_index = 0
   end
 
   def start_subroutine
@@ -19,12 +21,21 @@ class JackAnalyzer::SymbolTable
   # @param type [JackAnalyzer::Identifier::Type]
   # @param kind [JackAnalyzer::Identifier::Kind]
   def define(name, type, kind)
-    if class_scope?(kind)
-      @class_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @class_exec_index)
-      @class_exec_index += 1
+    case kind
+    when STATIC
+      @class_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @static_index)
+      @static_index += 1
+    when FIELD
+      @class_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @field_index)
+      @field_index += 1
+    when ARG
+      @subroutine_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @subroutine_index)
+      @subroutine_index += 1
+    when VAR
+      @subroutine_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @local_index)
+      @local_index += 1
     else
-      @subroutine_scope[name.to_sym] = JackAnalyzer::Identifier.new(name, type, kind, @subroutine_exec_index)
-      @subroutine_exec_index += 1
+      raise
     end
   end
 
