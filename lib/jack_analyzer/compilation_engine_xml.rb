@@ -1,14 +1,7 @@
 require "nokogiri"
 require "set"
-require "jack_analyzer/identifier"
-require "jack_analyzer/symbol_table"
-require "jack_analyzer/vm_writer"
 
-class JackAnalyzer::CompilationEngine
-  include JackAnalyzer::Identifier::Kind
-  include JackAnalyzer::Identifier::Type
-  include JackAnalyzer::VmWriter
-
+class JackAnalyzer::CompilationEngineXml
   OP_SET = Set.new(["+", "-", "*", "/", "&", "|", "<", ">", "="])
   UNARY_OP_SET = Set.new(["-", "~"])
   TYPE_KEYWORD_SET = Set.new(["int", "char", "boolean"])
@@ -16,8 +9,6 @@ class JackAnalyzer::CompilationEngine
   def initialize(input, output)
     @input = Nokogiri::Slop(input).tokens.element_children
     @output = File.new(output, "w+")
-    @vm = []
-    @symbol_table = JackAnalyzer::SymbolTable.new
 
     advance!
   end
@@ -26,12 +17,11 @@ class JackAnalyzer::CompilationEngine
   def compile_class!
     builder = Nokogiri::XML::Builder.new do |xml|
       xml.send :method_missing, :class do |c|
-#        c.send @token_type, @token    # <keyword> class </keyword>
+        c.send @token_type, @token    # <keyword> class </keyword>
         advance!
-#        c.send @token_type, @token    # className
-        @class_name = @token
+        c.send @token_type, @token    # className
         advance!
-#        c.send @token_type, @token    # <symbol> { </symbol>
+        c.send @token_type, @token    # <symbol> { </symbol>
         advance!
         while @token != "}"           # classVarDec* subroutineDec*
           case @token
@@ -45,10 +35,11 @@ class JackAnalyzer::CompilationEngine
           advance!
         end
 
-#        c.send @token_type, @token    # <symbol> } </symbol>
+        c.send @token_type, @token    # <symbol> } </symbol>
       end
     end
-    @output.puts(@vm)
+    @output.puts(builder.to_xml)
+    puts builder.to_xml
   end
 
   private
@@ -74,58 +65,38 @@ class JackAnalyzer::CompilationEngine
 
   # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
   def compile_subroutine_dec!(builder)
-    @subroutine_vm = []
-
     builder.subroutineDec do |sd|
-      subroutine_type = @token
-#      sd.send @token_type, @token  # <keyword> constructor | function | method </keyword>
+      sd.send @token_type, @token  # <keyword> constructor | function | method </keyword>
       advance!
-      return_type = @token
-#      sd.send @token_type, @token  # 'void' | type
+      sd.send @token_type, @token  # 'void' | type
       advance!
-      subroutine_name =
-        if subroutine_type == "method"
-          @token
-        else
-          @class_name + "." + @token
-        end
-
-#      sd.send @token_type, @token  # <identifier> subroutineName </identifier>
+      sd.send @token_type, @token  # <identifier> subroutineName </identifier>
       advance!
-#      sd.send @token_type, @token  # <symbol> ( </symbol>
+      sd.send @token_type, @token  # <symbol> ( </symbol>
       advance!
-#      sd.parameterList do |pl|
+      sd.parameterList do |pl|
         if is_type?
           compile_parameter_list!(pl)
           advance!
         end
-#      end
-#      sd.send @token_type, @token # <symbol> ) </symbol>
+      end
+      sd.send @token_type, @token # <symbol> ) </symbol>
       advance!
       compile_subroutine_body!(sd)
-      if return_type == "void"
-        @subroutine_vm << write_push("constant", 0)
-      end
-      @subroutine_vm << write_return
-
-      @subroutine_vm.unshift(write_function(subroutine_name, @symbol_table.var_count(VAR)))
-      @vm.concat(@subroutine_vm)
     end
   end
 
   # ((type varName) (',' type varName)*)?
   def compile_parameter_list!(builder)
-#    builder.send @token_type, @token   # type
+    builder.send @token_type, @token   # type
     advance!
-    @symbol_table.define(@token, previous_token, ARG)
-#    builder.send @token_type, @token   # varName
+    builder.send @token_type, @token   # varName
     while next_token == ","
       advance!
       builder.send @token_type, @token # <symbol> , </symbol>
       advance!
       builder.send @token_type, @token # type
       advance!
-      @symbol_table.define(@token, previous_token, ARG)
       builder.send @token_type, @token # varName
     end
   end
@@ -135,7 +106,7 @@ class JackAnalyzer::CompilationEngine
     raise "Invalid token #{@token} for subroutineBody" unless @token == "{"
 
     builder.subroutineBody do |body|
-#      body.send @token_type, @token # <symbol> { </symbol>
+      body.send @token_type, @token # <symbol> { </symbol>
       advance!
       while @token == "var"
         compile_var_dec!(body)      # varDec
@@ -143,7 +114,7 @@ class JackAnalyzer::CompilationEngine
       end
       compile_statements!(body)     # statements
       advance!
-#      body.send @token_type, @token # <symbol> } </symbol>
+      body.send @token_type, @token # <symbol> } </symbol>
     end
   end
 
@@ -152,25 +123,19 @@ class JackAnalyzer::CompilationEngine
     raise "Invalid token #{@token} for varDec" unless @token == "var"
 
     builder.varDec do |vd|
-#      vd.send @token_type, @token # <keyword> var </keyword>
+      vd.send @token_type, @token # <keyword> var </keyword>
       advance!
-#      vd.send @token_type, @token # type
+      vd.send @token_type, @token # type
       advance!
-      @symbol_table.define(@token, previous_token, VAR)
-      @subroutine_vm << write_push("constant", 0)
-      @subroutine_vm << write_pop("local", @symbol_table.index_of(@token))
-#      vd.send @token_type, @token # <identifier> varName </identifier>
+      vd.send @token_type, @token # <identifier> varName </identifier>
       advance!
       while @token == ","
-#        vd.send @token_type, @token # <symbol> , </symbol>
+        vd.send @token_type, @token # <symbol> , </symbol>
         advance!
-        @symbol_table.define(@token, previous_token, VAR)
-        @subroutine_vm << write_push("constant", 0)
-        @subroutine_vm << write_pop("local", @symbol_table.index_of(@token))
-#        vd.send @token_type, @token # <identifier> varName </identifier>
+        vd.send @token_type, @token # <identifier> varName </identifier>
         advance!
       end
-#      vd.send @token_type, @token # <symbol> ; </symbol>
+      vd.send @token_type, @token # <symbol> ; </symbol>
     end
   end
 
@@ -266,12 +231,11 @@ class JackAnalyzer::CompilationEngine
   # 'do' subroutineCall ';'
   def compile_do!(builder)
     builder.doStatement do |ds|
-#      ds.send @token_type, @token # <keyword> do </keyword>
+      ds.send @token_type, @token # <keyword> do </keyword>
       advance!
       compile_subroutine_call!(ds) # subroutineCall
       advance!
-      @subroutine_vm << write_pop("temp", 0)
-#      ds.send @token_type, @token # <symbol> ; </symbol>
+      ds.send @token_type, @token # <symbol> ; </symbol>
     end
   end
 
@@ -294,11 +258,9 @@ class JackAnalyzer::CompilationEngine
       compile_term!(ex)             # term
       while OP_SET.member?(next_token)
         advance!
-        op = @token
-#        ex.send @token_type, @token # <symbol> op </symbol>
+        ex.send @token_type, @token # <symbol> op </symbol>
         advance!
         compile_term!(ex)
-        @subroutine_vm << write_arithmetic(binary_command_from(op))
       end
     end
   end
@@ -310,9 +272,7 @@ class JackAnalyzer::CompilationEngine
     builder.term do |t|
       case @token_type.to_sym
       when :integerConstant, :stringConstant, :keyword
-        @subroutine_vm << write_push("constant", @token)
-#        write_expression(@token)
-#        t.send @token_type, @token # integerConstant | stringConstant | keywordConstant
+        t.send @token_type, @token # integerConstant | stringConstant | keywordConstant
       when :identifier
         case next_token
         when ".", "(" # subroutineCall
@@ -330,11 +290,11 @@ class JackAnalyzer::CompilationEngine
         end
       when :symbol
         if @token == "(" # grouped expression
-#          t.send @token_type, @token # <symbol> ( </symbol>
+          t.send @token_type, @token # <symbol> ( </symbol>
           advance!
           compile_expression!(t)
           advance!
-#          t.send @token_type, @token # <symbol> ) </symbol>
+          t.send @token_type, @token # <symbol> ) </symbol>
         elsif UNARY_OP_SET.member?(@token)
           t.send @token_type, @token
           advance!
@@ -351,41 +311,33 @@ class JackAnalyzer::CompilationEngine
   # subroutineName '(' expressionList ')' |
   # (className | varName)  '.' subroutineName '(' expressionList ')'
   def compile_subroutine_call!(builder)
-#    builder.send @token_type, @token   # subroutineName | className | varName
-    receiver_or_function = called_function = @token
-    should_push_self = true
+    builder.send @token_type, @token   # subroutineName | className | varName
     advance!
     if @token == "."
-#      builder.send @token_type, @token # <symbol> . </symbol>
+      builder.send @token_type, @token # <symbol> . </symbol>
       advance!
-#      builder.send @token_type, @token # subroutineName
-      called_function = called_function + "." + @token
-      should_push_self = false unless self_needed_function?(receiver_or_function)
+      builder.send @token_type, @token # subroutineName
       advance!
     end
-#    builder.send @token_type, @token # <symbol> ( </symbol>
+    builder.send @token_type, @token # <symbol> ( </symbol>
     advance!
-    @n_args = 0
     builder.expressionList do |el|
       if @token != ")"
         compile_expression_list!(el) # expressionList
         advance!
       end
     end
-    @subroutine_vm << write_call(called_function, @n_args)
-#    builder.send @token_type, @token # <symbol> ) </symbol>
+    builder.send @token_type, @token # <symbol> ) </symbol>
   end
 
   # ( expression (',' expression)* )?
   def compile_expression_list!(builder)
     compile_expression!(builder)       # expression
-    @n_args += 1
     while next_token == ","
       advance!
       builder.send @token_type, @token # <symbol>, </symbol>
       advance!
       compile_expression!(builder)
-      @n_args += 1
     end
   end
 
@@ -405,24 +357,10 @@ class JackAnalyzer::CompilationEngine
   end
 
   def next_token_type
-    @input[@index + 1]&.name
+    @input[@index+1]&.name
   end
 
   def next_token
-    @input[@index + 1]&.content
-  end
-
-  def previous_token
-    @input[@index - 1]&.content
-  end
-
-  def self_needed_function?(receiver)
-    @symbol_table.kind_of(receiver) != NONE
-  end
-
-  def write_expression(exp)
-    case exp
-    when /\d+/; write_push("constant", exp)
-    end
+    @input[@index+1]&.content
   end
 end

@@ -34,6 +34,6 @@ module JackAnalyzer::Cli
   private
 
   def self.output_file_from(input_file)
-    File.join(File.dirname(input_file), File.basename(input_file, ".*") + ".xml")
+    File.join(File.dirname(input_file), File.basename(input_file, ".*") + ".vm")
   end
 end
