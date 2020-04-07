@@ -26,7 +26,7 @@ module JackAnalyzer::VmWriter
   end
 
   def write_label(label)
-    "(%s)" % label
+    "label %s" % label
   end
 
   def write_goto(label)
