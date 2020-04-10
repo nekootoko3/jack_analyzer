@@ -6,7 +6,6 @@ require "jack_analyzer/vm_writer"
 
 class JackAnalyzer::CompilationEngine
   include JackAnalyzer::Identifier::Kind
-  include JackAnalyzer::Identifier::Type
   include JackAnalyzer::VmWriter
 
   OP_SET = Set.new(["+", "-", "*", "/", "&", "|", "<", ">", "="])
@@ -49,18 +48,18 @@ class JackAnalyzer::CompilationEngine
   # ('static' | 'field') type varName (',' varName)* ';'
   def compile_class_var_dec
     # 'static' | 'field'
+    var_kind = @token
     advance! # type
     var_type = @token
     advance! # varName
-    @symbol_table.define(@token, var_type, kind_from(token))
+    @symbol_table.define(@token, var_type, kind_from(var_kind))
     advance! # , | ;
     while @token == ","
       # ,
       advance! # varName
-      @symbol_table.define(@token, var_type, kind_from(token))
+      @symbol_table.define(@token, var_type, kind_from(var_kind))
       advance! # ;
     end
-    # ;
   end
 
   # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
@@ -70,17 +69,21 @@ class JackAnalyzer::CompilationEngine
 
     # <keyword> constructor | function | method </keyword>
     subroutine_type = @token
-    if subroutine_type == "method"
+    case subroutine_type
+    when "method"
       # set object's base address to segment this
       @subroutine_vm << write_push("argument", 0)
+      @subroutine_vm << write_pop("pointer", 0)
+    when "constructor"
+      @subroutine_vm << write_push("constant", @symbol_table.var_count(FIELD))
+      @subroutine_vm << write_call("Memory.alloc", 1)
       @subroutine_vm << write_pop("pointer", 0)
     end
 
     advance! # 'void' | type
     return_type = @token
     advance! # subroutineName
-    subroutine_name = subroutine_type == "method" ?
-      @token : @class_name + "." + @token
+    subroutine_name = @class_name + "." + @token
     advance! # (
     advance! # parameterList | )
     if token_is_type?
@@ -328,35 +331,39 @@ class JackAnalyzer::CompilationEngine
   # subroutineName '(' expressionList ')' |
   # (className | varName)  '.' subroutineName '(' expressionList ')'
   def compile_subroutine_call
-    called_function = @token # subroutineName | className | varName
-    advance! # . | (
-    if @token == "."
-      # .
-      class_or_var_name = called_function
-
-      receiver_kind = @symbol_table.kind_of(class_or_var_name)
-      case receiver_kind
-      when ARG, VAR
-        # pass receiver address to function as hidden argument 0
-        @subroutine_vm << write_push(segment_from(receiver_kind), @symbol_table.index_of(class_or_var_name))
+    is_method = false
+    if next_token == "."
+      is_class = @symbol_table.kind_of(@token) == NONE
+      if is_class
+        class_name = @token
+        advance!; advance! # . subroutineName
+        function = class_name + "." + @token
       else
-        # NONE: class function call
+        is_method = true
+        receiver_name = @token
+        receiver_kind = @symbol_table.kind_of(receiver_name)
+        receiver_type = @symbol_table.type_of(receiver_name)
+        advance!; advance! # . subroutineName
+        @subroutine_vm << write_push(segment_from(receiver_kind), @symbol_table.index_of(receiver_name))
+        function = receiver_type + "." + @token
       end
-      advance! # subroutineName
-      called_function = called_function + "." + @token
-      advance! # (
     else
       # self method call case
+      # pass receiver address to function as hidden argument 0
       @subroutine_vm << write_push("pointer", 0)
+      is_method = true
+      function = @class_name + "." + @token
     end
-    advance! # expressionList | )
 
+    advance! # (
+    advance! # expressionList | )
     if @token != ")"
       n_args = compile_expression_list # expressionList
       advance! # )
     end
     n_args ||= 0
-    @subroutine_vm << write_call(called_function, n_args)
+    n_args += 1 if is_method
+    @subroutine_vm << write_call(function, n_args)
   end
 
   # ( expression (',' expression)* )?

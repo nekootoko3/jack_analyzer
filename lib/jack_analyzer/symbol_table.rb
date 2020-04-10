@@ -2,7 +2,6 @@ require "jack_analyzer/identifier"
 
 class JackAnalyzer::SymbolTable
   include JackAnalyzer::Identifier::Kind
-  include JackAnalyzer::Identifier::Type
 
   def initialize
     @class_scope = {}
@@ -69,10 +68,13 @@ class JackAnalyzer::SymbolTable
   end
 
   def segment_of(token)
-    kind = kind_of(token)
-    case kind
+    case kind_of(token)
     when ARG; "argument"
     when VAR; "local"
+    when STATIC; "static"
+    when FIELD; "this"
+    else
+      raise
     end
   end
 end

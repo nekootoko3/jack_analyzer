@@ -35,14 +35,8 @@ class JackAnalyzer::Identifier
       case kind
       when ARG; "argument"
       when VAR; "local"
+      when FIELD; "this"
       end
     end
-  end
-
-  module Type
-    UNDEFINED  = 0
-    INT        = 1
-    CHAR       = 2
-    BOOLEAN    = 3
   end
 end
