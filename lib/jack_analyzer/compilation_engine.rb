@@ -1,5 +1,6 @@
 require "nokogiri"
 require "set"
+require "securerandom"
 require "jack_analyzer/identifier"
 require "jack_analyzer/symbol_table"
 require "jack_analyzer/vm_writer"
@@ -74,6 +75,8 @@ class JackAnalyzer::CompilationEngine
       # set object's base address to segment this
       @subroutine_vm << write_push("argument", 0)
       @subroutine_vm << write_pop("pointer", 0)
+      # increment argument index because argument 0 is passed above
+      @symbol_table.define(SecureRandom.uuid, "char", ARG)
     when "constructor"
       @subroutine_vm << write_push("constant", @symbol_table.var_count(FIELD))
       @subroutine_vm << write_call("Memory.alloc", 1)
@@ -256,7 +259,7 @@ class JackAnalyzer::CompilationEngine
     advance! # subroutineCall
     compile_subroutine_call
     advance! # ;
-    @subroutine_vm << write_pop("temp", 3)
+    @subroutine_vm << write_pop("temp", 0)
   end
 
   # 'return' expression? ';'
@@ -302,7 +305,7 @@ class JackAnalyzer::CompilationEngine
       case @token
       when "true"
         @subroutine_vm << write_push("constant", 1)
-        @subroutine_vm << write_arithmetic("neg")
+        @subroutine_vm << write_arithmetic("not")
       when "false", "null"
         @subroutine_vm << write_push("constant", 0)
       when "this"
