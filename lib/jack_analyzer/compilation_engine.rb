@@ -173,19 +173,30 @@ class JackAnalyzer::CompilationEngine
     var_kind = @symbol_table.kind_of(var_name)
     var_type = @symbol_table.type_of(var_name)
     advance! # [ | =
-    # TODO: Array access case
     if @token == "["
       advance! # expression
       compile_expression
+      @subroutine_vm << write_push(@symbol_table.segment_of(var_name), @symbol_table.index_of(var_name))
+      @subroutine_vm << write_arithmetic("add")
+      @subroutine_vm << write_pop("temp", 3)
+
       advance! # ]
       advance! # =
+      advance! # expression
+
+      compile_expression
+
+      @subroutine_vm << write_push("temp", 3)
+      @subroutine_vm << write_pop("pointer", 1)
+      @subroutine_vm << write_pop("that", 0)
+    else
+      advance! # expression
+      compile_expression
+      @subroutine_vm << write_pop(
+        @symbol_table.segment_of(var_name),
+        @symbol_table.index_of(var_name)
+      )
     end
-    advance! # expression
-    compile_expression
-    @subroutine_vm << write_pop(
-      @symbol_table.segment_of(var_name),
-      @symbol_table.index_of(var_name)
-    )
     advance! # ;
   end
 
@@ -245,7 +256,7 @@ class JackAnalyzer::CompilationEngine
     advance! # subroutineCall
     compile_subroutine_call
     advance! # ;
-    @subroutine_vm << write_pop("temp", 0)
+    @subroutine_vm << write_pop("temp", 3)
   end
 
   # 'return' expression? ';'
@@ -281,7 +292,12 @@ class JackAnalyzer::CompilationEngine
     when :integerConstant
       @subroutine_vm << write_push("constant", @token)
     when :stringConstant
-      @subroutine_vm << write_push("constant", @token)
+      @subroutine_vm << write_push("constant", @token.length)
+      @subroutine_vm << write_call("String.new", 1)
+      @token.bytes.each do |b|
+        @subroutine_vm << write_push("constant", b)
+        @subroutine_vm << write_call("String.appendChar", 2)
+      end
     when :keyword
       case @token
       when "true"
@@ -298,10 +314,20 @@ class JackAnalyzer::CompilationEngine
         # subroutineCall
         compile_subroutine_call
       when "[" # array index access
+        identifier = @token
         # identifier
         advance! # [
         advance! # expression
-        compile_expression
+        # set array object's base address
+        @subroutine_vm << write_push(
+          @symbol_table.segment_of(identifier),
+          @symbol_table.index_of(identifier)
+        )
+        compile_expression # 単一の値が入っている
+        @subroutine_vm << write_arithmetic("add")
+        @subroutine_vm << write_pop("pointer", 1)
+        @subroutine_vm << write_push("that", 0)
+
         advance! # ]
       else
         @subroutine_vm << write_push(
