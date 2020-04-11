@@ -14,7 +14,7 @@ class JackAnalyzer::CompilationEngine
 
   def initialize(input, output)
     @input = Nokogiri::Slop(input).tokens.element_children
-    @output = File.new(output, "w+")
+    @output = output.is_a?(IO) ? output : File.new(output, "w+")
     @symbol_table = JackAnalyzer::SymbolTable.new
     @vm = []
 

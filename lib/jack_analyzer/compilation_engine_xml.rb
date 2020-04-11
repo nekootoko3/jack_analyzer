@@ -8,7 +8,7 @@ class JackAnalyzer::CompilationEngineXml
 
   def initialize(input, output)
     @input = Nokogiri::Slop(input).tokens.element_children
-    @output = File.new(output, "w+")
+    @output = output.is_a?(IO) ? output : File.new(output, "w+")
 
     advance!
   end
@@ -39,7 +39,6 @@ class JackAnalyzer::CompilationEngineXml
       end
     end
     @output.puts(builder.to_xml)
-    puts builder.to_xml
   end
 
   private

@@ -4,4 +4,4 @@ $LOAD_PATH.unshift File.dirname(__FILE__) + "/../lib"
 
 require "jack_analyzer"
 
-JackAnalyzer::Cli.start(ARGV)
+JackAnalyzer::Cli.start
