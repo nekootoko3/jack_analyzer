@@ -31,7 +31,7 @@ module JackAnalyzer
     def start
       input = ARGV[0]
       if input.nil?
-        raise "Neither input file specified nor debug option"
+        raise "Input file specified"
       end
 
       input_files = case File.ftype(input).to_sym
