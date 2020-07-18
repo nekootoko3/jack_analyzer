@@ -11,7 +11,7 @@ module JackAnalyzer
       new(options).start
     end
 
-    attr_reader :options, :jack_path
+    attr_reader :options, :jack_path, :engine
     attr_accessor :jack_files
 
     def initialize(options = nil)
@@ -22,6 +22,10 @@ module JackAnalyzer
       else
         @options = parse_options
       end
+
+      @engine = @options[:xml] ?
+        JackAnalyzer::CompilationEngineXml :
+        JackAnalyzer::CompilationEngine
     end
 
     def start
@@ -81,12 +85,6 @@ module JackAnalyzer
     def output_file_from(jack_file)
       ext = options[:xml] ? ".xml" : ".vm"
       File.join(File.dirname(jack_file), File.basename(jack_file, ".*") + ext)
-    end
-
-    def engine
-      options[:xml] ?
-        JackAnalyzer::CompilationEngineXml :
-        JackAnalyzer::CompilationEngine
     end
   end
 end
