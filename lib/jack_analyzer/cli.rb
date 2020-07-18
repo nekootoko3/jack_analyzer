@@ -11,43 +11,30 @@ module JackAnalyzer
       new(options).start
     end
 
+    attr_reader :options, :jack_path, :engine
+    attr_accessor :jack_files
+
     def initialize(options = nil)
+      @vm_path = ARGV[0]
+
       if options
         @options = options
-        return
+      else
+        @options = parse_options
       end
 
-      @options = {}
-      OptionParser.new do |opts|
-        opts.on("-x", "--xml") do |x|
-          @options[:xml] = x
-        end
-        opts.on("-d", "--debug") do |d|
-          @options[:debug] = d
-        end
-      end.parse!
+      @engine = @options[:xml] ?
+        JackAnalyzer::CompilationEngineXml :
+        JackAnalyzer::CompilationEngine
     end
 
     def start
-      input = ARGV[0]
-      if input.nil?
-        raise "Input file specified"
-      end
+      load_jack_files!
 
-      input_files = case File.ftype(input).to_sym
-        when :file
-          [input]
-        when :directory
-          Dir.glob("#{input}/*.jack")
-        else
-          raise "Invalid file type #{File.ftype(input)}"
-        end
+      jack_files.each do |jack_file|
+        puts "processing #{jack_file}..."
 
-      input_files.each do |input_file|
-        puts "processing #{input_file}..."
-
-        output = @options[:debug] ? $stdout : output_file_from(input_file)
-        tokenizer = JackAnalyzer::JackTokenizer.new(input_file)
+        tokenizer = JackAnalyzer::JackTokenizer.new(jack_file)
         builder = Nokogiri::XML::Builder.new do |xml|
           xml.tokens do |t|
             while tokenizer.has_more_tokens?
@@ -57,21 +44,47 @@ module JackAnalyzer
           end
         end
         engine.new(builder.to_xml, output).compile_class!
-        puts "processed #{input_file}"
+        puts "processed #{jack_file}"
       end
     end
 
     private
 
-    def output_file_from(input_file)
-      ext = @options[:xml] ? ".xml" : ".vm"
-      File.join(File.dirname(input_file), File.basename(input_file, ".*") + ext)
+    def parse_options
+      parsed_options = {}
+      OptionParser.new do |opts|
+        opts.on("-x", "--xml") do |x|
+          parsed_options[:xml] = x
+        end
+        opts.on("-d", "--debug") do |d|
+          parsed_options[:debug] = d
+        end
+      end.parse!
+      parsed_options
     end
 
-    def engine
-      @options[:xml] ?
-        JackAnalyzer::CompilationEngineXml :
-        JackAnalyzer::CompilationEngine
+    def load_jack_files!
+      raise ArgumentError, "jack file or directory not specified" unless jack_path
+
+      @jack_files = case File.ftype(jack_path).to_sym
+        when :file
+          [jack_path]
+        when :directory
+          Dir.glob("#{jack_path}/*.jack")
+        else
+          raise "Invalid file type #{File.ftype(jack_path)}"
+        end
+    end
+
+    def output
+      return @output if defined?(@output)
+
+      @output = options[:debug] ? $stdout : output_file_from(jack_file)
+    end
+
+    def output_file_from(jack_file)
+      ext = options[:xml] ? ".xml" : ".vm"
+      File.join(File.dirname(jack_file), File.basename(jack_file, ".*") + ext)
     end
   end
 end
