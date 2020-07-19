@@ -15,7 +15,7 @@ module JackAnalyzer
     attr_accessor :jack_files
 
     def initialize(options = nil)
-      @vm_path = ARGV[0]
+      @jack_path = ARGV[0]
 
       if options
         @options = options
@@ -65,6 +65,7 @@ module JackAnalyzer
 
     def load_jack_files!
       raise ArgumentError, "jack file or directory not specified" unless jack_path
+      puts jack_path
 
       @jack_files = case File.ftype(jack_path).to_sym
         when :file
