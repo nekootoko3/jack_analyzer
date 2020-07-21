@@ -4,21 +4,21 @@ class JackAnalyzer::JackTokenizer
   include JackAnalyzer::TokenType
 
   attr_reader :input
-  attr_accessor :location
+  attr_accessor :location, :raw_token, :raw_token_type
 
   def initialize(input_file)
     @input = File.open(input_file).read
     @location = 0
-    @token = nil
-    @token_type = nil
+    @raw_token = nil
+    @raw_token_type = nil
   end
 
   def token_type
-    str_from(@token_type)
+    str_from(raw_token_type)
   end
 
   def token
-    tokenize_from(@token)
+    tokenize_from(raw_token)
   end
 
   # @return [Boolean]
@@ -75,28 +75,28 @@ class JackAnalyzer::JackTokenizer
 
     case
     when is_symbol?(input[location])
-      @token_type = SYMBOL
+      self.raw_token_type = SYMBOL
     when is_integer_constant?(input[location])
       while input[location+1].match?(/\d/)
         self.location += 1
       end
-      @token_type = INT_CONST
+      self.raw_token_type = INT_CONST
     when is_string_constant?(input[location])
       start += 1 # in case of string constant, start is ".
       self.location += 1
       while !input[location+1].match?(/"/)
         self.location += 1
       end
-      @token_type = STRING_CONST
+      self.raw_token_type = STRING_CONST
     else
       while input[location+1].match?(/\w/)
         self.location += 1
       end
-      @token_type = is_keyword?(input[start..location]) ?
+      self.raw_token_type = is_keyword?(input[start..location]) ?
         KEYWORD : IDENTIFIER
     end
 
-    @token = input[start..location]
-    self.location += 1 if @token_type == STRING_CONST # in case of string constant, location is ".
+    self.raw_token = input[start..location]
+    self.location += 1 if raw_token_type == STRING_CONST # in case of string constant, location is ".
   end
 end
