@@ -16,16 +16,11 @@ module JackAnalyzer
 
     def initialize(options = nil)
       @jack_path = ARGV[0]
-
-      if options
-        @options = options
-      else
-        @options = parse_options
-      end
+      @options = options || parse_options
 
       @engine = @options[:xml] ?
-        JackAnalyzer::CompilationEngineXml :
-        JackAnalyzer::CompilationEngine
+        CompilationEngineXml :
+        CompilationEngine
     end
 
     def start
@@ -34,7 +29,7 @@ module JackAnalyzer
       jack_files.each do |jack_file|
         puts "processing #{jack_file}..."
 
-        tokenizer = JackAnalyzer::JackTokenizer.new(jack_file)
+        tokenizer = JackTokenizer.new(jack_file)
         builder = Nokogiri::XML::Builder.new do |xml|
           xml.tokens do |t|
             while tokenizer.has_more_tokens?
@@ -43,7 +38,7 @@ module JackAnalyzer
             end
           end
         end
-        engine.new(builder.to_xml, output).compile_class!
+        engine.new(builder.to_xml, output_from(jack_file)).compile_class!
         puts "processed #{jack_file}"
       end
     end
@@ -65,7 +60,6 @@ module JackAnalyzer
 
     def load_jack_files!
       raise ArgumentError, "jack file or directory not specified" unless jack_path
-      puts jack_path
 
       @jack_files = case File.ftype(jack_path).to_sym
         when :file
@@ -77,10 +71,8 @@ module JackAnalyzer
         end
     end
 
-    def output
-      return @output if defined?(@output)
-
-      @output = options[:debug] ? $stdout : output_file_from(jack_file)
+    def output_from(jack_file)
+      options[:debug] ? $stdout : output_file_from(jack_file)
     end
 
     def output_file_from(jack_file)
