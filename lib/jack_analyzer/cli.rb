@@ -18,9 +18,7 @@ module JackAnalyzer
       @jack_path = ARGV[0]
       @options = options || parse_options
 
-      @engine = @options[:xml] ?
-        CompilationEngineXml :
-        CompilationEngine
+      @engine = @options[:xml] ? CompilationEngineXml : CompilationEngine
     end
 
     def start
